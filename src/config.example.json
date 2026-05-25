@@ -14,6 +14,7 @@
         "doMobileSearch": true,
         "doDailyCheckIn": true,
         "doReadToEarn": true,
+        "doMissions": true,
         "doStarSearch": true,
         "starSearchCount": 5
     },

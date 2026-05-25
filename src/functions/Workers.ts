@@ -49,6 +49,14 @@ export class Workers {
         this.bot.logger.info(this.bot.isMobile, 'DAILY-SET', 'All "Daily Set" items have been completed')
     }
 
+    public async doMissions(page: Page) {
+        if (this.bot.rewardsVersion === 'modern') {
+            return this.getModernWorkers().doMissions(page)
+        }
+        // Legacy UI has no missions concept (handled by punchCards)
+        this.bot.logger.debug(this.bot.isMobile, 'MISSIONS', 'Skipped: Legacy UI (missions only on Modern UI)')
+    }
+
     public async doMorePromotions(data: DashboardData, page: Page) {
         // Modern UI: "More Promotions" is now "Keep earning" on /earn page
         if (this.bot.rewardsVersion === 'modern') {
