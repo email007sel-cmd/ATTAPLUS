@@ -18,6 +18,7 @@
 - **Auto-detection**: Automatically detects whether the account uses legacy or modern Rewards UI
 - **Daily Set** (`/dashboard`): Expands collapsible sections, clicks task cards to earn points
 - **Keep Earning** (`/earn`): Detects earnable cards (badge `+N`, description "earn N points"), clicks to complete
+- **Missions** (`/earn`): Auto-detects mission/challenge cards with sub-tasks (e.g., "0/4 tasks"), clicks into each mission, completes all sub-tasks, and verifies completion. Handles dynamic missions that change every few days.
 - **Smart filtering**: Skips completed tasks, locked tasks ("Silver level required"), and non-earnable cards
 - **Desktop-only execution**: Modern UI tasks run on desktop browser (mobile detection not reliable)
 - **Tab management**: Closes ALL extra tabs after each task (prevents tab accumulation)
@@ -117,6 +118,7 @@ Edit `config.json` to customize behavior, or set `CONFIG_*` environment variable
 | `workers.doMobileSearch`      | boolean | `true`  | Perform mobile searches     |
 | `workers.doDailyCheckIn`      | boolean | `true`  | Complete daily check-in     |
 | `workers.doReadToEarn`        | boolean | `true`  | Complete Read-to-Earn       |
+| `workers.doMissions`          | boolean | `true`  | Complete mission/challenge cards (Modern UI) |
 
 ### Search Settings
 
@@ -209,11 +211,12 @@ Bot Start
 ├── Modern UI → Skip in mobile phase
 │
 ├── Desktop Login
-│   └── Modern UI → Run Daily Set (/dashboard) + Keep Earning (/earn)
+│   └── Modern UI → Run Daily Set (/dashboard) + Keep Earning (/earn) + Missions (/earn)
 │       ├── Expand sections (Your progress, Daily set)
 │       ├── Click each task card (triggers Microsoft tracking)
+│       ├── Detect mission cards ("X/Y tasks"), click into detail page, complete sub-tasks
 │       ├── Close ALL extra tabs after each click
-│       └── Verify: reload page, retry remaining tasks
+│       └── Verify: reload page, retry remaining tasks/missions
 │
 └── Search (Mobile + Desktop)
 ```

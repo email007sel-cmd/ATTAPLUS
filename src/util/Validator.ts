@@ -61,6 +61,7 @@ export const ConfigSchema = z.object({
         doMobileSearch: z.boolean(),
         doDailyCheckIn: z.boolean(),
         doReadToEarn: z.boolean(),
+        doMissions: z.boolean().default(true),
         doStarSearch: z.boolean().default(true),
         starSearchCount: z.number().int().min(1).max(50).default(5)
     }),

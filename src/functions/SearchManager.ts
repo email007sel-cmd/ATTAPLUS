@@ -462,6 +462,10 @@ export class SearchManager {
                 await modernWorkers.doKeepEarning(this.bot.mainDesktopPage)
             }
 
+            if (this.bot.config.workers.doMissions) {
+                await modernWorkers.doMissions(this.bot.mainDesktopPage)
+            }
+
             this.bot.logger.info('main', 'MODERN-UI-DESKTOP', 'Modern UI tasks completed')
         } catch (error) {
             this.bot.logger.error('main', 'MODERN-UI-DESKTOP', `Error: ${errMsg(error)}`)
