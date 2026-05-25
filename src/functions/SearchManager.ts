@@ -103,20 +103,36 @@ export class SearchManager {
                     .filter(Boolean)
                     .join(' + ')
                 this.bot.logger.info('main', 'SEARCH-MANAGER', `Creating desktop session for: ${reason}`)
+                let desktopSession: BrowserSession | null = null
                 try {
-                    const desktopSession = await executionContext.run({ isMobile: false, account }, async () =>
+                    desktopSession = await executionContext.run({ isMobile: false, account }, async () =>
                         this.createDesktopSession(account, accountEmail)
                     )
                     await executionContext.run({ isMobile: false, account }, async () => {
                         if (this.bot.rewardsVersion === 'modern') {
-                            const data = await this.bot.browser.func.getDashboardData()
-                            await this.runModernUITasks(data)
+                            try {
+                                const data = await this.bot.browser.func.getDashboardData()
+                                await this.runModernUITasks(data)
+                            } catch (error) {
+                                this.bot.logger.error(
+                                    'main',
+                                    'SEARCH-MANAGER',
+                                    `Modern UI tasks failed (continuing to STAR Search): ${errMsg(error)}`
+                                )
+                            }
                         }
                         await this.runStarSearch(this.bot.mainDesktopPage, false)
-                        await this.bot.browser.func.closeBrowser(desktopSession.context, accountEmail)
                     })
                 } catch (error) {
                     this.bot.logger.error('main', 'SEARCH-MANAGER', `Desktop tasks failed: ${errMsg(error)}`)
+                } finally {
+                    if (desktopSession) {
+                        try {
+                            await this.bot.browser.func.closeBrowser(desktopSession.context, accountEmail)
+                        } catch {
+                            /* already logged */
+                        }
+                    }
                 }
             }
 
@@ -554,10 +570,19 @@ export class SearchManager {
         )
 
         return await executionContext.run({ isMobile: false, accountEmail }, async () => {
+            let pointsEarned = 0
             try {
                 // Run Modern UI tasks on desktop (Daily Set + Keep Earning)
                 if (this.bot.rewardsVersion === 'modern') {
-                    await this.runModernUITasks(data)
+                    try {
+                        await this.runModernUITasks(data)
+                    } catch (error) {
+                        this.bot.logger.error(
+                            'main',
+                            'SEARCH-DESKTOP-PARALLEL',
+                            `Modern UI tasks failed (continuing): ${errMsg(error)}`
+                        )
+                    }
                 }
 
                 this.bot.logger.info(
@@ -565,7 +590,7 @@ export class SearchManager {
                     'SEARCH-DESKTOP-PARALLEL',
                     `Search start | target=${missingSearchPoints.desktopPoints}`
                 )
-                const pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainDesktopPage, false)
+                pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainDesktopPage, false)
 
                 this.bot.logger.info(
                     'main',
@@ -577,18 +602,15 @@ export class SearchManager {
                     'SEARCH-DESKTOP-PARALLEL',
                     `Result | account=${accountEmail} | earned=${pointsEarned}`
                 )
-
-                // Run STAR Search on desktop before closing
-                await this.runStarSearch(this.bot.mainDesktopPage, false)
-
-                return pointsEarned
             } catch (error) {
                 this.bot.logger.error('main', 'SEARCH-DESKTOP-PARALLEL', `Failed: ${errMsg(error)}`)
                 if (error instanceof Error && error.stack) {
                     this.bot.logger.debug('main', 'SEARCH-DESKTOP-PARALLEL', `Stack: ${error.stack}`)
                 }
-                return 0
             } finally {
+                // Always run STAR Search even if searches or Modern UI tasks failed
+                await this.runStarSearch(this.bot.mainDesktopPage, false)
+
                 this.bot.logger.info('main', 'SEARCH-DESKTOP-PARALLEL', 'Closing desktop session')
                 this.bot.logger.debug('main', 'SEARCH-DESKTOP-PARALLEL', `Closing context | account=${accountEmail}`)
                 try {
@@ -601,6 +623,8 @@ export class SearchManager {
                     }
                 }
             }
+
+            return pointsEarned
         })
     }
 
@@ -629,13 +653,22 @@ export class SearchManager {
             }
 
             let desktopSession: BrowserSession | null = null
+            let pointsEarned = 0
             try {
                 this.bot.logger.info('main', 'SEARCH-DESKTOP-SEQUENTIAL', 'Init desktop session')
                 desktopSession = await this.createDesktopSession(account, accountEmail)
 
                 // Run Modern UI tasks on desktop (Daily Set + Keep Earning)
                 if (this.bot.rewardsVersion === 'modern') {
-                    await this.runModernUITasks(data)
+                    try {
+                        await this.runModernUITasks(data)
+                    } catch (error) {
+                        this.bot.logger.error(
+                            'main',
+                            'SEARCH-DESKTOP-SEQUENTIAL',
+                            `Modern UI tasks failed (continuing): ${errMsg(error)}`
+                        )
+                    }
                 }
 
                 this.bot.logger.info(
@@ -644,7 +677,7 @@ export class SearchManager {
                     `Search start | target=${missingSearchPoints.desktopPoints}`
                 )
 
-                const pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainDesktopPage, false)
+                pointsEarned = await this.bot.activities.doSearch(data, this.bot.mainDesktopPage, false)
 
                 this.bot.logger.info(
                     'main',
@@ -656,18 +689,16 @@ export class SearchManager {
                     'SEARCH-DESKTOP-SEQUENTIAL',
                     `Result | account=${accountEmail} | earned=${pointsEarned}`
                 )
-
-                // Run STAR Search on desktop before closing
-                await this.runStarSearch(this.bot.mainDesktopPage, false)
-
-                return pointsEarned
             } catch (error) {
                 this.bot.logger.error('main', 'SEARCH-DESKTOP-SEQUENTIAL', `Failed: ${errMsg(error)}`)
                 if (error instanceof Error && error.stack) {
                     this.bot.logger.debug('main', 'SEARCH-DESKTOP-SEQUENTIAL', `Stack: ${error.stack}`)
                 }
-                return 0
             } finally {
+                // Always run STAR Search even if searches or Modern UI tasks failed
+                if (desktopSession) {
+                    await this.runStarSearch(this.bot.mainDesktopPage, false)
+                }
                 if (desktopSession) {
                     this.bot.logger.info('main', 'SEARCH-DESKTOP-SEQUENTIAL', 'Closing desktop session')
                     this.bot.logger.debug(
@@ -686,6 +717,8 @@ export class SearchManager {
                     }
                 }
             }
+
+            return pointsEarned
         })
     }
 }

@@ -15,11 +15,11 @@ export class UrlReward extends Workers {
     private oldBalance: number = this.bot.userData.currentPoints
 
     public async doUrlReward(promotion: BasePromotion) {
-        if (!this.bot.requestToken && this.bot.rewardsVersion === 'legacy') {
+        if (!this.bot.requestToken) {
             this.bot.logger.warn(
                 this.bot.isMobile,
                 'URL-REWARD',
-                'Skipping: Request token not available, this activity requires it!'
+                `Skipping: Request token not available (${this.bot.rewardsVersion} UI) | offerId=${promotion.offerId}`
             )
             return
         }
