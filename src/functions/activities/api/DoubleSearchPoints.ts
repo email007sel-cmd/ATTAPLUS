@@ -15,11 +15,11 @@ export class DoubleSearchPoints extends Workers {
         const activityType = promotion.activityType
 
         try {
-            if (!this.bot.requestToken && this.bot.rewardsVersion === 'legacy') {
+            if (!this.bot.requestToken) {
                 this.bot.logger.warn(
                     this.bot.isMobile,
                     'DOUBLE-SEARCH-POINTS',
-                    'Skipping: Request token not available, this activity requires it!'
+                    `Skipping: Request token not available (${this.bot.rewardsVersion} UI) | offerId=${offerId}`
                 )
                 return
             }
